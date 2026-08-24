@@ -297,6 +297,8 @@ body {
     flex-direction: column;
     gap: 4px;
     padding: 8px;
+    position: relative;
+    z-index: 10;
 }
 
 .meal-card-actions button {
@@ -309,6 +311,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    z-index: 11;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .meal-card-actions .fav-btn {

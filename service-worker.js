@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meal-planner-v1';
+const CACHE_NAME = 'meal-planner-v2';
 const ASSETS = [
     '/',
     '/index.html',
@@ -7,6 +7,8 @@ const ASSETS = [
     '/js/translations.js',
     '/js/api.js',
     '/js/storage.js',
+    '/js/pdf-parser.js',
+    '/js/marmiton-scraper.js',
     '/js/app.js',
     '/manifest.json'
 ];

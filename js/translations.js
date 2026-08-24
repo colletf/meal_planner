@@ -1129,11 +1129,34 @@ function getGroceryCategory(aisle, ingredientName) {
 
     const searchText = ((aisle || '') + ' ' + (ingredientName || '')).toLowerCase();
 
+    // Extraire les mots individuels pour comparaison
+    const words = searchText.split(/[\s,'-]+/).filter(w => w.length > 2);
+
+    // Fonction pour obtenir le singulier d'un mot français
+    const toSingular = (word) => {
+        if (word.endsWith('aux')) return word.slice(0, -3) + 'al'; // chevaux -> cheval
+        if (word.endsWith('eaux')) return word.slice(0, -1); // gâteaux -> gâteau
+        if (word.endsWith('eux')) return word; // délicieux reste délicieux
+        if (word.endsWith('oux')) return word.slice(0, -1); // choux -> chou
+        if (word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+        if (word.endsWith('x')) return word.slice(0, -1);
+        return word;
+    };
+
     for (const [category, data] of Object.entries(GROCERY_CATEGORIES)) {
         if (category === 'Autres') continue;
         for (const keyword of data.keywords) {
+            // Vérifier si le mot-clé est dans le texte complet
             if (searchText.includes(keyword)) {
                 return category;
+            }
+            // Vérifier aussi avec les mots individuels (singulier)
+            const keywordSingular = toSingular(keyword);
+            for (const word of words) {
+                const wordSingular = toSingular(word);
+                if (wordSingular === keywordSingular || word === keyword) {
+                    return category;
+                }
             }
         }
     }

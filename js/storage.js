@@ -111,7 +111,7 @@ const Storage = {
 
     addFavorite(meal) {
         const favorites = this.getFavorites();
-        if (!favorites.find(f => f.id === meal.id)) {
+        if (!favorites.find(f => String(f.id) === String(meal.id))) {
             favorites.push(meal);
             this.saveFavorites(favorites);
         }
@@ -120,14 +120,14 @@ const Storage = {
 
     removeFavorite(mealId) {
         let favorites = this.getFavorites();
-        favorites = favorites.filter(f => f.id !== mealId);
+        favorites = favorites.filter(f => String(f.id) !== String(mealId));
         this.saveFavorites(favorites);
         return favorites;
     },
 
     isFavorite(mealId) {
         const favorites = this.getFavorites();
-        return favorites.some(f => f.id === mealId);
+        return favorites.some(f => String(f.id) === String(mealId));
     },
 
     // Recettes personnalisées (importées)
@@ -148,7 +148,7 @@ const Storage = {
 
     removeCustomRecipe(recipeId) {
         let recipes = this.getCustomRecipes();
-        recipes = recipes.filter(r => r.id !== recipeId);
+        recipes = recipes.filter(r => String(r.id) !== String(recipeId));
         this.saveCustomRecipes(recipes);
         return recipes;
     }
