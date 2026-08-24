@@ -266,13 +266,13 @@ class MealPlannerApp {
                     </div>
                 </div>
                 <div class="meal-card-actions">
-                    <button class="fav-btn ${isFav ? 'active' : ''}" onclick="app.toggleFavorite(${meal.id})" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">
+                    <button class="fav-btn ${isFav ? 'active' : ''}" onclick="app.toggleFavorite('${meal.id}')" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">
                         <i class="fas fa-heart"></i>
                     </button>
-                    <button class="view-btn" onclick="app.showMealDetail(${meal.id})">
+                    <button class="view-btn" onclick="app.showMealDetail('${meal.id}')">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="add-btn" onclick="app.showAddModal(${meal.id})">
+                    <button class="add-btn" onclick="app.showAddModal('${meal.id}')">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -281,7 +281,7 @@ class MealPlannerApp {
     }
 
     toggleFavorite(mealId) {
-        const meal = this.currentMeals.find(m => m.id === mealId);
+        const meal = this.currentMeals.find(m => String(m.id) === String(mealId));
         if (!meal) return;
 
         if (Storage.isFavorite(mealId)) {
@@ -321,7 +321,7 @@ class MealPlannerApp {
     }
 
     showMealDetail(mealId) {
-        const meal = this.currentMeals.find(m => m.id === mealId);
+        const meal = this.currentMeals.find(m => String(m.id) === String(mealId));
         if (!meal) return;
 
         document.getElementById('meal-modal-title').textContent = meal.title;
@@ -354,7 +354,7 @@ class MealPlannerApp {
             </div>
 
             <div class="meal-detail-actions">
-                <button class="btn btn-success btn-block" onclick="app.addFromDetail(${meal.id})">
+                <button class="btn btn-success btn-block" onclick="app.addFromDetail('${meal.id}')">
                     <i class="fas fa-calendar-plus"></i> Ajouter au planning
                 </button>
             </div>

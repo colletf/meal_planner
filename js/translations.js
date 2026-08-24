@@ -34,65 +34,113 @@ const MEAL_TYPES = [
 const GROCERY_CATEGORIES = {
     'Boucherie': {
         keywords: [
-            'meat', 'beef', 'pork', 'lamb', 'chicken', 'turkey', 'veal', 'poultry', 'sausage', 'bacon', 'ham',
-            'viande', 'boeuf', 'bœuf', 'porc', 'agneau', 'poulet', 'dinde', 'veau', 'volaille', 'saucisse', 'lardons', 'jambon',
-            'blanquette', 'escalope', 'côte', 'filet', 'steak', 'rôti', 'gigot', 'épaule'
+            // Anglais
+            'meat', 'beef', 'pork', 'lamb', 'chicken', 'turkey', 'veal', 'poultry', 'sausage', 'bacon', 'ham', 'duck', 'rabbit', 'game',
+            // Français - viandes
+            'viande', 'boeuf', 'bœuf', 'porc', 'agneau', 'poulet', 'dinde', 'veau', 'volaille', 'canard', 'lapin', 'gibier', 'pintade', 'caille', 'oie',
+            // Français - charcuterie
+            'saucisse', 'saucisson', 'lardons', 'lardon', 'jambon', 'bacon', 'pancetta', 'chorizo', 'merguez', 'andouille', 'boudin', 'rillettes', 'pâté', 'terrine', 'coppa', 'bresaola', 'salami', 'mortadelle', 'rosette',
+            // Français - morceaux
+            'blanquette', 'escalope', 'côte', 'côtelette', 'filet', 'steak', 'rôti', 'gigot', 'épaule', 'cuisse', 'aile', 'blanc', 'magret', 'entrecôte', 'bavette', 'onglet', 'paleron', 'jarret', 'joue', 'queue', 'langue', 'foie', 'rognon', 'ris', 'tripes', 'osso bucco', 'bourguignon', 'pot-au-feu', 'navarin', 'carbonnade', 'hachis', 'haché', 'farce', 'boulette', 'merguez'
         ],
         order: 1,
         color: 'meat'
     },
     'Poissonnerie': {
         keywords: [
-            'seafood', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'cod', 'tilapia', 'shellfish',
-            'poisson', 'saumon', 'thon', 'crevette', 'crabe', 'homard', 'cabillaud', 'moule', 'fruits de mer'
+            // Anglais
+            'seafood', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'cod', 'tilapia', 'shellfish', 'prawn', 'mussel', 'oyster', 'scallop', 'squid', 'octopus',
+            // Français - poissons
+            'poisson', 'saumon', 'thon', 'cabillaud', 'colin', 'merlu', 'lieu', 'bar', 'loup', 'dorade', 'daurade', 'sole', 'turbot', 'raie', 'maquereau', 'sardine', 'anchois', 'hareng', 'truite', 'brochet', 'sandre', 'perche', 'carpe', 'anguille', 'lotte', 'baudroie', 'rouget', 'saint-pierre', 'espadon', 'flétan', 'églefin', 'haddock',
+            // Français - fruits de mer
+            'fruits de mer', 'crevette', 'gambas', 'langoustine', 'langouste', 'crabe', 'homard', 'écrevisse', 'moule', 'huître', 'coquille', 'saint-jacques', 'palourde', 'coque', 'bulot', 'bigorneau', 'oursin', 'poulpe', 'calamar', 'encornet', 'seiche'
         ],
         order: 2,
         color: 'fish'
     },
     'Fruits & Légumes': {
         keywords: [
-            'produce', 'vegetable', 'fruit', 'fresh', 'lettuce', 'tomato', 'onion', 'garlic', 'potato', 'carrot', 'apple', 'banana', 'lemon', 'orange', 'herbs', 'salad',
-            'légume', 'fruit', 'frais', 'laitue', 'tomate', 'oignon', 'ail', 'pomme de terre', 'carotte', 'pomme', 'banane', 'citron', 'orange', 'herbe', 'salade',
-            'courgette', 'aubergine', 'poivron', 'champignon', 'épinard', 'brocoli', 'chou', 'haricot vert', 'persil', 'basilic', 'thym', 'ciboulette', 'échalote', 'poireau', 'céleri', 'fenouil', 'asperge', 'concombre', 'avocat', 'fraise', 'framboise', 'cerise', 'pêche', 'poire', 'raisin', 'melon', 'pastèque', 'ananas', 'mangue', 'kiwi'
+            // Anglais
+            'produce', 'vegetable', 'fruit', 'fresh', 'lettuce', 'tomato', 'onion', 'garlic', 'potato', 'carrot', 'apple', 'banana', 'lemon', 'orange', 'herbs', 'salad', 'spinach', 'broccoli', 'cabbage', 'pepper', 'cucumber', 'zucchini', 'eggplant', 'mushroom', 'asparagus', 'celery', 'leek',
+            // Français - légumes courants
+            'légume', 'tomate', 'oignon', 'ail', 'échalote', 'carotte', 'pomme de terre', 'patate', 'courgette', 'aubergine', 'poivron', 'concombre', 'salade', 'laitue', 'épinard', 'brocoli', 'chou', 'chou-fleur', 'haricot vert', 'petit pois', 'pois', 'maïs', 'artichaut', 'asperge', 'betterave', 'céleri', 'fenouil', 'poireau', 'navet', 'radis', 'endive', 'chicorée', 'mâche', 'roquette', 'cresson',
+            // Français - champignons
+            'champignon', 'champignons', 'paris', 'shiitake', 'pleurote', 'girolle', 'chanterelle', 'cèpe', 'morille', 'truffe',
+            // Français - courges
+            'courge', 'potiron', 'potimarron', 'butternut', 'citrouille',
+            // Français - aromates
+            'herbe', 'persil', 'basilic', 'thym', 'romarin', 'ciboulette', 'coriandre', 'menthe', 'aneth', 'estragon', 'laurier', 'sauge', 'origan', 'marjolaine', 'cerfeuil', 'sarriette',
+            // Français - fruits
+            'fruit', 'pomme', 'poire', 'banane', 'orange', 'citron', 'citron vert', 'lime', 'pamplemousse', 'clémentine', 'mandarine', 'raisin', 'fraise', 'framboise', 'mûre', 'myrtille', 'cassis', 'groseille', 'cerise', 'pêche', 'nectarine', 'abricot', 'prune', 'mirabelle', 'quetsche', 'figue', 'melon', 'pastèque', 'ananas', 'mangue', 'papaye', 'kiwi', 'litchi', 'fruit de la passion', 'grenade', 'kaki', 'coing', 'nèfle', 'avocat'
         ],
         order: 3,
         color: 'vegetable'
     },
     'Crémerie': {
         keywords: [
+            // Anglais
             'dairy', 'milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg',
-            'lait', 'fromage', 'yaourt', 'beurre', 'crème', 'oeuf', 'œuf', 'jaune', 'crème fraîche', 'mascarpone', 'ricotta', 'mozzarella', 'parmesan', 'gruyère', 'emmental', 'comté', 'chèvre', 'roquefort', 'camembert', 'brie'
+            // Français - produits laitiers
+            'lait', 'crème', 'crème fraîche', 'crème liquide', 'crème épaisse', 'beurre', 'beurre doux', 'beurre salé', 'beurre demi-sel', 'yaourt', 'yogourt', 'fromage blanc', 'petit suisse', 'faisselle',
+            // Français - oeufs
+            'oeuf', 'œuf', 'oeufs', 'œufs', 'jaune', 'blanc d\'oeuf',
+            // Français - fromages
+            'fromage', 'parmesan', 'gruyère', 'emmental', 'comté', 'beaufort', 'reblochon', 'morbier', 'raclette', 'tomme', 'cantal', 'saint-nectaire', 'fourme', 'bleu', 'roquefort', 'gorgonzola', 'camembert', 'brie', 'coulommiers', 'pont-l\'évêque', 'livarot', 'munster', 'maroilles', 'époisses', 'chèvre', 'feta', 'mozzarella', 'burrata', 'ricotta', 'mascarpone', 'grana padano', 'pecorino', 'halloumi', 'cheddar', 'gouda', 'mimolette'
         ],
         order: 4,
         color: 'dairy'
     },
     'Boulangerie': {
         keywords: [
+            // Anglais
             'bakery', 'bread', 'baguette', 'croissant',
-            'pain', 'brioche', 'farine', 'levure'
+            // Français
+            'pain', 'baguette', 'ficelle', 'boule', 'campagne', 'pain de mie', 'brioche', 'croissant', 'pain au chocolat', 'chocolatine', 'viennoiserie', 'chausson', 'palmier', 'pain aux raisins'
         ],
         order: 5,
         color: 'other'
     },
     'Épicerie': {
         keywords: [
+            // Anglais
             'pasta', 'rice', 'grain', 'cereal', 'flour', 'sugar', 'canned', 'dried', 'beans', 'lentils', 'oil', 'vinegar', 'sauce', 'condiment', 'spice', 'seasoning', 'baking',
-            'pâtes', 'riz', 'céréale', 'sucre', 'conserve', 'haricot', 'lentille', 'huile', 'vinaigre', 'épice', 'sel', 'poivre', 'moutarde', 'mayonnaise', 'ketchup', 'bouillon', 'cube', 'concentré', 'coulis', 'miel', 'confiture', 'nutella', 'pois chiche', 'semoule', 'quinoa', 'boulgour'
+            // Français - féculents et céréales
+            'pâtes', 'spaghetti', 'tagliatelle', 'penne', 'fusilli', 'farfalle', 'macaroni', 'lasagne', 'ravioli', 'gnocchi', 'nouille', 'riz', 'riz basmati', 'riz thaï', 'riz arborio', 'risotto', 'semoule', 'couscous', 'boulgour', 'quinoa', 'épeautre', 'orge', 'avoine', 'flocon', 'muesli', 'céréale', 'polenta', 'maïzena', 'fécule', 'tapioca', 'vermicelle',
+            // Français - légumineuses
+            'légumineuse', 'lentille', 'lentille verte', 'lentille corail', 'lentille beluga', 'haricot', 'haricot blanc', 'haricot rouge', 'haricot noir', 'flageolet', 'mogette', 'pois cassé', 'pois chiche', 'fève',
+            // Français - farines et levures
+            'farine', 'farine de blé', 'farine complète', 'farine de sarrasin', 'levure', 'levure chimique', 'levure boulangère', 'bicarbonate', 'chapelure',
+            // Français - sucres
+            'sucre', 'sucre blanc', 'sucre roux', 'cassonade', 'sucre glace', 'sucre vanillé', 'vergeoise', 'sirop d\'érable', 'miel', 'mélasse', 'confiture', 'marmelade', 'gelée', 'compote', 'pâte à tartiner', 'nutella',
+            // Français - huiles et vinaigres
+            'huile', 'huile d\'olive', 'huile de tournesol', 'huile de colza', 'huile de noix', 'huile de sésame', 'huile d\'arachide', 'vinaigre', 'vinaigre de vin', 'vinaigre balsamique', 'vinaigre de cidre', 'vinaigre de xérès',
+            // Français - condiments et sauces
+            'sel', 'sel fin', 'gros sel', 'fleur de sel', 'poivre', 'poivre noir', 'poivre blanc', 'moutarde', 'moutarde de dijon', 'moutarde à l\'ancienne', 'mayonnaise', 'ketchup', 'sauce soja', 'sauce worcestershire', 'tabasco', 'harissa', 'sriracha', 'nuoc-mâm', 'sauce tomate', 'coulis', 'concentré de tomate', 'pesto',
+            // Français - bouillons
+            'bouillon', 'cube', 'bouillon de volaille', 'bouillon de boeuf', 'bouillon de légumes', 'fond', 'fumet',
+            // Français - épices
+            'épice', 'curry', 'curcuma', 'cumin', 'paprika', 'piment', 'cayenne', 'cannelle', 'muscade', 'gingembre', 'safran', 'cardamome', 'coriandre', 'carvi', 'anis', 'badiane', 'clou de girofle', 'quatre-épices', 'ras el hanout', 'tandoori', 'garam masala', 'herbes de provence', 'bouquet garni',
+            // Français - fruits secs et graines
+            'fruit sec', 'raisin sec', 'abricot sec', 'pruneau', 'datte', 'figue séchée', 'noix', 'noisette', 'amande', 'pistache', 'noix de cajou', 'cacahuète', 'arachide', 'pignon', 'graine', 'graine de tournesol', 'graine de courge', 'graine de lin', 'graine de chia', 'sésame',
+            // Français - conserves
+            'conserve', 'bocal', 'boîte', 'tomate pelée', 'tomate concassée', 'maïs', 'petit pois', 'haricot vert', 'olive', 'cornichon', 'câpre', 'coeur de palmier', 'artichaut'
         ],
         order: 6,
         color: 'other'
     },
     'Surgelés': {
         keywords: [
-            'frozen', 'ice', 'surgelé', 'congelé', 'glace'
+            'frozen', 'ice', 'surgelé', 'congelé', 'glace', 'sorbet', 'crème glacée'
         ],
         order: 7,
         color: 'other'
     },
     'Boissons': {
         keywords: [
+            // Anglais
             'beverage', 'drink', 'juice', 'water', 'soda', 'wine', 'beer',
-            'boisson', 'jus', 'eau', 'vin', 'bière', 'cidre', 'limonade', 'sirop'
+            // Français
+            'boisson', 'jus', 'jus d\'orange', 'jus de pomme', 'nectar', 'eau', 'eau gazeuse', 'vin', 'vin blanc', 'vin rouge', 'vin rosé', 'bière', 'cidre', 'limonade', 'sirop', 'café', 'thé', 'tisane', 'infusion', 'chocolat chaud', 'lait', 'lait d\'amande', 'lait de soja', 'lait d\'avoine', 'lait de coco'
         ],
         order: 8,
         color: 'other'
