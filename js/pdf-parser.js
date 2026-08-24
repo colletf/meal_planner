@@ -1,0 +1,238 @@
+/**
+ * Parser PDF pour les recettes Marmiton
+ * Utilise pdf.js pour extraire le texte et parser le format Marmiton
+ */
+
+const MarmitonParser = {
+    /**
+     * Parse un fichier PDF Marmiton et retourne un objet recette
+     */
+    async parsePDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + ' ';
+        }
+
+        // Debug: log le texte extrait pour voir ce qu'on a
+        console.log('=== DEBUT TEXTE PDF ===');
+        console.log(fullText.substring(0, 1500));
+        console.log('=== MILIEU TEXTE PDF ===');
+        console.log(fullText.substring(Math.floor(fullText.length/2), Math.floor(fullText.length/2) + 1500));
+        console.log('=== FIN TEXTE PDF ===');
+        console.log(fullText.substring(fullText.length - 1500));
+
+        // Chercher spécifiquement "kg de" ou "blanquette"
+        console.log('=== RECHERCHE BLANQUETTE ===');
+        const blanquetteIdx = fullText.toLowerCase().indexOf('blanquette');
+        if (blanquetteIdx > -1) {
+            console.log('Trouvé "blanquette" à position', blanquetteIdx, ':', fullText.substring(blanquetteIdx - 20, blanquetteIdx + 50));
+        } else {
+            console.log('BLANQUETTE NON TROUVÉ dans le texte!');
+        }
+
+        const kgIdx = fullText.indexOf('kg de');
+        if (kgIdx > -1) {
+            console.log('Trouvé "kg de" à position', kgIdx, ':', fullText.substring(kgIdx - 10, kgIdx + 40));
+        }
+
+        return this.parseMarmitonText(fullText);
+    },
+
+    /**
+     * Parse le texte extrait d'un PDF Marmiton
+     */
+    parseMarmitonText(text) {
+        const recipe = {
+            id: 'custom_' + Date.now(),
+            title: '',
+            image: 'https://via.placeholder.com/300x200?text=Recette+Marmiton',
+            readyInMinutes: 30,
+            servings: 4,
+            cuisines: ['Française'],
+            diets: [],
+            dishTypes: [],
+            instructions: '',
+            ingredients: [],
+            source: 'marmiton'
+        };
+
+        // 1. Extraire le titre - chercher après le dernier ">"
+        const titleMatch = text.match(/>\s*([A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s'''-]{5,60}?)(?:\s+i\s+|\s+\d+\/\d+)/);
+        if (titleMatch) {
+            recipe.title = titleMatch[1].trim();
+        }
+
+        // 2. Extraire le nombre de personnes
+        const servingsMatch = text.match(/(\d+)\s*personnes?\s*\+/i);
+        if (servingsMatch) {
+            recipe.servings = parseInt(servingsMatch[1]);
+        }
+
+        // 3. Extraire les temps
+        const prepMatch = text.match(/Préparation\s*:?\s*(\d+)\s*min/i);
+        const cookMatch = text.match(/Cuisson\s*:?\s*(\d+)\s*(min|h)/i);
+        if (prepMatch) recipe.readyInMinutes = parseInt(prepMatch[1]);
+        if (cookMatch) {
+            recipe.readyInMinutes += cookMatch[2] === 'h' ? parseInt(cookMatch[1]) * 60 : parseInt(cookMatch[1]);
+        }
+
+        // 4. Extraire les ingrédients
+        recipe.ingredients = this.parseIngredients(text);
+
+        // 5. Extraire les instructions
+        recipe.instructions = this.parseInstructions(text);
+
+        return recipe;
+    },
+
+    /**
+     * Parse les ingrédients - recherche très flexible
+     */
+    parseIngredients(text) {
+        const ingredients = [];
+        const seen = new Set();
+
+        // Liste des patterns à chercher
+        const patterns = [
+            // "1 kg de blanquette de veau" - unité métrique + de + nom
+            /(\d+(?:[,\.]\d+)?)\s*(kg|g|ml|cl|l)\s+de\s+([a-zA-ZÀ-ÿœ][a-zA-ZÀ-ÿœ\s'''-]{2,35})/gi,
+            // "10 g de beurre doux" - même pattern
+            /(\d+(?:[,\.]\d+)?)\s*(kg|g|ml|cl|l)\s+de\s+([a-zA-ZÀ-ÿœ][a-zA-ZÀ-ÿœ\s'''-]{2,35})/gi,
+            // "25 cl de vin blanc"
+            /(\d+)\s*(cl|ml|l)\s+de\s+([a-zA-ZÀ-ÿœ][a-zA-ZÀ-ÿœ\s'''-]{2,25})/gi,
+            // "2 cuillères à soupe de farine"
+            /(\d+)\s*cuillères?\s*à\s*(soupe|café)\s+de\s+([a-zA-ZÀ-ÿœ][a-zA-ZÀ-ÿœ\s'''-]{2,25})/gi,
+            // "1 cube de bouillon"
+            /(\d+)\s*(cube|pot|boîte|sachet)s?\s+de\s+([a-zA-ZÀ-ÿœ][a-zA-ZÀ-ÿœ\s'''-]{2,30})/gi,
+            // "2 carottes", "1 oignon jaune" - nombre + nom simple
+            /(\d+)\s+(oignons?|carottes?|tomates?|pommes?|oeufs?|jaunes?\s+d['']oeuf|gousses?\s+d['']ail|citrons?|oranges?)(?:\s+[a-zA-ZÀ-ÿ]+)?/gi,
+        ];
+
+        // Mots à exclure
+        const excluded = new Set([
+            'personnes', 'minutes', 'heures', 'étape', 'étapes',
+            'min', 'recette', 'recettes', 'avis', 'cookeo'
+        ]);
+
+        for (const pattern of patterns) {
+            pattern.lastIndex = 0;
+            let match;
+            while ((match = pattern.exec(text)) !== null) {
+                const amount = parseFloat(match[1].replace(',', '.'));
+                let unit = (match[2] || '').toLowerCase();
+                let name = (match[3] || '').toLowerCase().trim();
+
+                // Si pas de groupe 3, le groupe 2 est le nom (pattern simple)
+                if (!match[3] && match[2]) {
+                    name = match[2].toLowerCase().trim();
+                    unit = ''; // Pas d'unité pour les patterns simples
+                }
+
+                // Nettoyer le nom
+                name = name.replace(/\s+/g, ' ').trim();
+
+                // Tronquer si trop long
+                if (name.length > 30) {
+                    name = name.split(' ').slice(0, 3).join(' ');
+                }
+
+                // Vérifications
+                if (name.length < 2) continue;
+                if (excluded.has(name)) continue;
+                if (seen.has(name)) continue;
+                // Éviter les ingrédients mal parsés avec "sel" dedans
+                if (name.includes('sel et') && name.length > 15) continue;
+
+                seen.add(name);
+
+                // Normaliser l'unité
+                if (unit === 'soupe') unit = 'c. à soupe';
+                else if (unit === 'café') unit = 'c. à café';
+                else if (['cube', 'pot', 'boîte', 'sachet'].includes(unit)) unit = '';
+                // Si l'unité ressemble à un ingrédient, c'est une erreur
+                else if (/oignon|carotte|tomate|jaune|oeuf/i.test(unit)) unit = '';
+
+                ingredients.push({
+                    id: ingredients.length,
+                    name: name,
+                    amount: amount,
+                    unit: unit,
+                    aisle: 'Other',
+                    original: match[0].trim()
+                });
+            }
+        }
+
+        // Cas spécial: "sel et poivre"
+        if (/sel\s+(et|&)\s+poivre/i.test(text) && !seen.has('sel et poivre')) {
+            ingredients.push({
+                id: ingredients.length,
+                name: 'sel et poivre',
+                amount: 1,
+                unit: '',
+                aisle: 'Other',
+                original: 'sel et poivre'
+            });
+        }
+
+        console.log('Ingrédients trouvés:', ingredients);
+        return ingredients;
+    },
+
+    /**
+     * Parse les instructions
+     */
+    parseInstructions(text) {
+        // Chercher le pattern "ÉTAPE X" suivi de texte
+        const steps = [];
+
+        // Regex pour trouver chaque étape - ÉTAPE ou Étape suivi d'un numéro
+        // Capture tout jusqu'à la prochaine ÉTAPE ou fin de section
+        const stepRegex = /[ÉE][Tt][Aa][Pp][Ee]\s*(\d+)\s*([\s\S]*?)(?=[ÉE][Tt][Aa][Pp][Ee]\s*\d|Marmiton|Note de l'auteur|La recette en bref|Vous aimerez|$)/gi;
+
+        let match;
+        const seenSteps = new Set();
+
+        while ((match = stepRegex.exec(text)) !== null) {
+            const stepNum = match[1];
+            let content = match[2].trim();
+
+            // Éviter les doublons
+            if (seenSteps.has(stepNum)) continue;
+            seenSteps.add(stepNum);
+
+            // Nettoyer le contenu
+            content = content
+                .replace(/\s+/g, ' ')
+                .replace(/stoppez avant l['']étape \d+\.?/gi, '')
+                .replace(/avant l['']étape \d+\.?/gi, '')
+                .trim();
+
+            // Supprimer le junk de fin
+            content = content
+                .replace(/Marmiton.*$/i, '')
+                .replace(/Voir toutes.*$/i, '')
+                .replace(/Note de l'auteur.*$/i, '')
+                .trim();
+
+            if (content.length > 10) {
+                steps.push({ num: parseInt(stepNum), content });
+            }
+        }
+
+        // Trier par numéro d'étape
+        steps.sort((a, b) => a.num - b.num);
+
+        // Formater
+        const instructions = steps.map(s => `**Étape ${s.num}**\n${s.content}`).join('\n\n');
+
+        console.log('Instructions trouvées:', steps.length, 'étapes');
+        return instructions || 'Instructions non disponibles.';
+    }
+};

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4a7c59">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Meal Planner</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-tab="meals">
+                <i class="fas fa-utensils"></i>
+                <span>Repas</span>
+            </button>
+            <button class="nav-btn" data-tab="plan">
+                <i class="fas fa-calendar-week"></i>
+                <span>Planning</span>
+            </button>
+            <button class="nav-btn" data-tab="groceries">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Courses</span>
+            </button>
+        </nav>
+
+        <!-- Meals Tab -->
+        <section id="meals-tab" class="tab-content active">
+            <header class="tab-header">
+                <h1>Découvrir des repas</h1>
+            </header>
+
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Rechercher un repas...">
+            </div>
+
+            <div class="action-buttons">
+                <button id="reload-btn" class="btn btn-success">
+                    <i class="fas fa-sync-alt"></i>
+                    Nouveaux
+                </button>
+                <button id="favorites-btn" class="btn btn-warning">
+                    <i class="fas fa-heart"></i>
+                    Favoris
+                </button>
+                <button id="import-btn" class="btn btn-secondary">
+                    <i class="fas fa-file-import"></i>
+                    Import
+                </button>
+            </div>
+
+            <div class="action-buttons" style="margin-top: 8px;">
+                <button id="filter-btn" class="btn btn-primary">
+                    <i class="fas fa-filter"></i>
+                    Filtres
+                </button>
+                <button id="exclude-btn" class="btn btn-danger">
+                    <i class="fas fa-ban"></i>
+                    Exclusions
+                </button>
+            </div>
+
+            <!-- Hidden file input for PDF import -->
+            <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
+
+            <div id="filter-status" class="filter-status hidden"></div>
+
+            <div id="meals-list" class="meals-list">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Chargement des repas...
+                </div>
+            </div>
+        </section>
+
+        <!-- Plan Tab -->
+        <section id="plan-tab" class="tab-content">
+            <header class="tab-header">
+                <h1>Planning de la semaine</h1>
+                <button id="clear-plan-btn" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                    Tout effacer
+                </button>
+            </header>
+
+            <div id="weekly-plan" class="weekly-plan"></div>
+        </section>
+
+        <!-- Groceries Tab -->
+        <section id="groceries-tab" class="tab-content">
+            <header class="tab-header">
+                <h1>Liste de courses</h1>
+            </header>
+
+            <div class="sort-buttons">
+                <span>Trier par:</span>
+                <button class="sort-btn active" data-sort="aisle">Rayon</button>
+                <button class="sort-btn" data-sort="name">Nom</button>
+            </div>
+
+            <div id="grocery-list" class="grocery-list"></div>
+        </section>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="modal-overlay hidden"></div>
+
+        <!-- Meal Detail Modal -->
+        <div id="meal-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2 id="meal-modal-title">Titre du repas</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="meal-modal-body"></div>
+        </div>
+
+        <!-- Add to Plan Modal -->
+        <div id="add-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2>Ajouter au planning</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="add-modal-body"></div>
+        </div>
+
+        <!-- Filter Modal -->
+        <div id="filter-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2><i class="fas fa-filter"></i> Filtres</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="filter-modal-body"></div>
+        </div>
+
+        <!-- Exclusions Modal -->
+        <div id="exclude-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2><i class="fas fa-ban"></i> Ingrédients exclus</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="exclude-modal-body"></div>
+        </div>
+
+        <!-- Favorites Modal -->
+        <div id="favorites-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2><i class="fas fa-heart"></i> Mes favoris</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="favorites-modal-body"></div>
+        </div>
+
+        <!-- Import Modal -->
+        <div id="import-modal" class="modal hidden">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-import"></i> Importer une recette</h2>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="import-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+
+    <script src="js/config.js"></script>
+    <script src="js/translations.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/pdf-parser.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>
