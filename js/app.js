@@ -284,7 +284,9 @@ class MealPlannerApp {
         const meal = this.currentMeals.find(m => String(m.id) === String(mealId));
         if (!meal) return;
 
-        if (Storage.isFavorite(mealId)) {
+        const wasActive = Storage.isFavorite(mealId);
+
+        if (wasActive) {
             Storage.removeFavorite(mealId);
             this.showToast('Retiré des favoris', '');
         } else {
@@ -292,7 +294,15 @@ class MealPlannerApp {
             this.showToast('Ajouté aux favoris !', 'success');
         }
 
-        this.renderMeals(this.currentMeals);
+        // Mettre à jour uniquement le bouton coeur sans recharger la liste
+        const card = document.querySelector(`.meal-card[data-id="${mealId}"]`);
+        if (card) {
+            const favBtn = card.querySelector('.fav-btn');
+            if (favBtn) {
+                favBtn.classList.toggle('active', !wasActive);
+                favBtn.title = wasActive ? 'Ajouter aux favoris' : 'Retirer des favoris';
+            }
+        }
     }
 
     updateFilterStatus() {
@@ -826,6 +836,9 @@ class MealPlannerApp {
         this.showToast('Recette importée !', 'success');
         this.closeAllModals();
         this.pendingImportRecipe = null;
+
+        // Rafraîchir la liste pour afficher la nouvelle recette
+        this.loadFavorites();
     }
 
     cancelImport() {
