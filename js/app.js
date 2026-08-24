@@ -15,6 +15,53 @@ class MealPlannerApp {
         this.setupGroceriesTab();
 
         this.loadMeals();
+
+        // Vérifier si une URL a été partagée (Android Share)
+        this.checkSharedURL();
+    }
+
+    checkSharedURL() {
+        const params = new URLSearchParams(window.location.search);
+        const sharedUrl = params.get('shared_url') || params.get('url') || params.get('text');
+
+        if (sharedUrl && sharedUrl.includes('marmiton')) {
+            // Nettoyer l'URL
+            const cleanUrl = this.extractMarmitonURL(sharedUrl);
+            if (cleanUrl) {
+                // Supprimer les paramètres de l'URL pour éviter de reimporter au refresh
+                window.history.replaceState({}, '', window.location.pathname);
+                // Importer la recette
+                this.importFromSharedURL(cleanUrl);
+            }
+        }
+    }
+
+    extractMarmitonURL(text) {
+        // Extraire l'URL Marmiton du texte partagé
+        const urlMatch = text.match(/(https?:\/\/[^\s]*marmiton\.org[^\s]*)/i);
+        return urlMatch ? urlMatch[1] : null;
+    }
+
+    async importFromSharedURL(url) {
+        this.showToast('Import de la recette en cours...', '');
+
+        try {
+            const recipe = await MarmitonScraper.importFromURL(url);
+
+            if (recipe && recipe.title) {
+                Storage.addCustomRecipe(recipe);
+                this.showToast(`"${recipe.title}" importée !`, 'success');
+
+                // Proposer d'ajouter au planning
+                this.currentMeals = [recipe];
+                setTimeout(() => this.showAddModal(recipe.id), 500);
+            } else {
+                throw new Error('Recette non reconnue');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showToast('Erreur: ' + error.message, 'error');
+        }
     }
 
     setupNavigation() {
@@ -608,25 +655,110 @@ class MealPlannerApp {
     showImportModal() {
         const body = document.getElementById('import-modal-body');
         body.innerHTML = `
-            <div class="import-info">
-                <i class="fas fa-info-circle"></i>
-                <p>Importez une recette depuis un PDF Marmiton :</p>
-                <ol>
-                    <li>Allez sur la recette Marmiton</li>
-                    <li>Cliquez sur "Imprimer" ou utilisez Ctrl+P</li>
-                    <li>Choisissez "Enregistrer en PDF"</li>
-                    <li>Importez le PDF ici</li>
-                </ol>
+            <div class="import-tabs">
+                <button class="import-tab active" data-tab="url">
+                    <i class="fas fa-link"></i> Via URL
+                </button>
+                <button class="import-tab" data-tab="pdf">
+                    <i class="fas fa-file-pdf"></i> Via PDF
+                </button>
             </div>
 
-            <button class="btn btn-success btn-block" onclick="document.getElementById('pdf-input').click()">
-                <i class="fas fa-file-pdf"></i> Sélectionner un PDF
-            </button>
+            <div id="import-url-section" class="import-section">
+                <div class="import-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Collez l'URL d'une recette Marmiton :</p>
+                </div>
+                <input type="url" id="url-input" class="url-input" placeholder="https://www.marmiton.org/recettes/...">
+                <button class="btn btn-success btn-block mt-16" onclick="app.importFromURLInput()">
+                    <i class="fas fa-download"></i> Importer
+                </button>
+            </div>
+
+            <div id="import-pdf-section" class="import-section hidden">
+                <div class="import-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Importez un PDF Marmiton :</p>
+                    <ol>
+                        <li>Sur Marmiton, cliquez "Imprimer"</li>
+                        <li>Choisissez "Enregistrer en PDF"</li>
+                        <li>Importez le PDF ici</li>
+                    </ol>
+                </div>
+                <button class="btn btn-success btn-block" onclick="document.getElementById('pdf-input').click()">
+                    <i class="fas fa-file-pdf"></i> Sélectionner un PDF
+                </button>
+            </div>
 
             <div id="import-preview" class="import-preview hidden"></div>
         `;
 
+        // Setup tabs
+        body.querySelectorAll('.import-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                body.querySelectorAll('.import-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.getElementById('import-url-section').classList.toggle('hidden', tabName !== 'url');
+                document.getElementById('import-pdf-section').classList.toggle('hidden', tabName !== 'pdf');
+            });
+        });
+
         this.openModal('import-modal');
+    }
+
+    async importFromURLInput() {
+        const input = document.getElementById('url-input');
+        const url = input.value.trim();
+
+        if (!url) {
+            this.showToast('Entrez une URL Marmiton', '');
+            return;
+        }
+
+        if (!url.includes('marmiton.org')) {
+            this.showToast('Ce n\'est pas une URL Marmiton', '');
+            return;
+        }
+
+        const preview = document.getElementById('import-preview');
+        preview.innerHTML = `
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Import en cours...</span>
+            </div>
+        `;
+        preview.classList.remove('hidden');
+
+        try {
+            const recipe = await MarmitonScraper.importFromURL(url);
+            this.pendingImportRecipe = recipe;
+
+            preview.innerHTML = `
+                <h4>Recette importée :</h4>
+                <div class="import-recipe-preview">
+                    <strong>${recipe.title}</strong>
+                    <p>${recipe.readyInMinutes} min • ${recipe.servings} personnes</p>
+                    <p>${recipe.ingredients.length} ingrédients</p>
+                </div>
+                <div class="import-actions">
+                    <button class="btn btn-success" onclick="app.confirmImport()">
+                        <i class="fas fa-check"></i> Ajouter aux favoris
+                    </button>
+                    <button class="btn btn-danger" onclick="app.cancelImport()">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Import error:', error);
+            preview.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur: ${error.message}</p>
+                </div>
+            `;
+        }
     }
 
     async handlePDFImport(event) {
@@ -894,10 +1026,6 @@ class MealPlannerApp {
         const plan = Storage.getWeeklyPlan();
         const ingredientsMap = new Map();
 
-        // DEBUG: Afficher le planning et les ingrédients
-        console.log('=== DEBUG GROCERY LIST ===');
-        console.log('Plan:', JSON.stringify(plan, null, 2));
-
         // Ingrédients à exclure de la liste de courses (mots exacts uniquement)
         const EXCLUDED_INGREDIENTS = [
             'water', 'ice', 'glaçons', 'glace',
@@ -962,9 +1090,6 @@ class MealPlannerApp {
                     }
 
                     const key = normalizeIngredientKey(ing.name);
-
-                    // DEBUG: voir chaque ingrédient traité
-                    console.log('Ingrédient:', ing.name, '-> key:', key);
 
                     if (ingredientsMap.has(key)) {
                         const existing = ingredientsMap.get(key);

@@ -20,5 +20,14 @@
             "type": "image/svg+xml",
             "purpose": "any maskable"
         }
-    ]
+    ],
+    "share_target": {
+        "action": "index.html",
+        "method": "GET",
+        "params": {
+            "url": "shared_url",
+            "title": "shared_title",
+            "text": "shared_text"
+        }
+    }
 }

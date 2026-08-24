@@ -1179,6 +1179,51 @@ body {
    IMPORT PDF
    ============================================ */
 
+.import-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.import-tab {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid var(--border);
+    background: var(--card-bg);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.import-tab.active {
+    border-color: var(--primary);
+    background: rgba(74, 124, 89, 0.1);
+    color: var(--primary);
+}
+
+.import-section.hidden {
+    display: none;
+}
+
+.url-input {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 0;
+}
+
+.url-input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
 .import-info {
     background: #e3f2fd;
     padding: 16px;

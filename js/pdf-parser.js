@@ -19,28 +19,6 @@ const MarmitonParser = {
             fullText += pageText + ' ';
         }
 
-        // Debug: log le texte extrait pour voir ce qu'on a
-        console.log('=== DEBUT TEXTE PDF ===');
-        console.log(fullText.substring(0, 1500));
-        console.log('=== MILIEU TEXTE PDF ===');
-        console.log(fullText.substring(Math.floor(fullText.length/2), Math.floor(fullText.length/2) + 1500));
-        console.log('=== FIN TEXTE PDF ===');
-        console.log(fullText.substring(fullText.length - 1500));
-
-        // Chercher spécifiquement "kg de" ou "blanquette"
-        console.log('=== RECHERCHE BLANQUETTE ===');
-        const blanquetteIdx = fullText.toLowerCase().indexOf('blanquette');
-        if (blanquetteIdx > -1) {
-            console.log('Trouvé "blanquette" à position', blanquetteIdx, ':', fullText.substring(blanquetteIdx - 20, blanquetteIdx + 50));
-        } else {
-            console.log('BLANQUETTE NON TROUVÉ dans le texte!');
-        }
-
-        const kgIdx = fullText.indexOf('kg de');
-        if (kgIdx > -1) {
-            console.log('Trouvé "kg de" à position', kgIdx, ':', fullText.substring(kgIdx - 10, kgIdx + 40));
-        }
-
         return this.parseMarmitonText(fullText);
     },
 
@@ -181,7 +159,6 @@ const MarmitonParser = {
             });
         }
 
-        console.log('Ingrédients trouvés:', ingredients);
         return ingredients;
     },
 
@@ -232,7 +209,6 @@ const MarmitonParser = {
         // Formater
         const instructions = steps.map(s => `**Étape ${s.num}**\n${s.content}`).join('\n\n');
 
-        console.log('Instructions trouvées:', steps.length, 'étapes');
         return instructions || 'Instructions non disponibles.';
     }
 };
