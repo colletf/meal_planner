@@ -1145,8 +1145,10 @@ body {
 }
 
 .btn-icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     border: none;
     background: var(--primary);
     color: white;
@@ -1155,10 +1157,18 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .btn-icon-danger {
     background: var(--danger);
+}
+
+.btn-icon:active {
+    transform: scale(0.95);
+    opacity: 0.9;
 }
 
 .badge {

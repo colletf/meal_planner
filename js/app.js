@@ -14,10 +14,19 @@ class MealPlannerApp {
         this.setupPlanTab();
         this.setupGroceriesTab();
 
-        this.loadMeals();
+        // Charger les favoris par défaut (au lieu de Spoonacular)
+        this.loadFavorites();
 
         // Vérifier si une URL a été partagée (Android Share)
         this.checkSharedURL();
+    }
+
+    loadFavorites() {
+        const favorites = Storage.getFavorites();
+        const customRecipes = Storage.getCustomRecipes();
+        this.currentMeals = [...favorites, ...customRecipes];
+        this.renderMeals(this.currentMeals);
+        this.updateFilterStatus();
     }
 
     checkSharedURL() {
@@ -137,7 +146,7 @@ class MealPlannerApp {
     }
 
     setupMealsTab() {
-        document.getElementById('reload-btn').addEventListener('click', () => this.loadMeals(true));
+        document.getElementById('reload-btn').addEventListener('click', () => this.loadFavorites());
         document.getElementById('filter-btn').addEventListener('click', () => this.showFilterModal());
         document.getElementById('exclude-btn').addEventListener('click', () => this.showExcludeModal());
         document.getElementById('favorites-btn').addEventListener('click', () => this.showFavoritesModal());

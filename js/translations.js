@@ -33,42 +33,67 @@ const MEAL_TYPES = [
 
 const GROCERY_CATEGORIES = {
     'Boucherie': {
-        keywords: ['meat', 'beef', 'pork', 'lamb', 'chicken', 'turkey', 'veal', 'poultry', 'sausage', 'bacon', 'ham'],
+        keywords: [
+            'meat', 'beef', 'pork', 'lamb', 'chicken', 'turkey', 'veal', 'poultry', 'sausage', 'bacon', 'ham',
+            'viande', 'boeuf', 'bœuf', 'porc', 'agneau', 'poulet', 'dinde', 'veau', 'volaille', 'saucisse', 'lardons', 'jambon',
+            'blanquette', 'escalope', 'côte', 'filet', 'steak', 'rôti', 'gigot', 'épaule'
+        ],
         order: 1,
         color: 'meat'
     },
     'Poissonnerie': {
-        keywords: ['seafood', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'cod', 'tilapia', 'shellfish'],
+        keywords: [
+            'seafood', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'cod', 'tilapia', 'shellfish',
+            'poisson', 'saumon', 'thon', 'crevette', 'crabe', 'homard', 'cabillaud', 'moule', 'fruits de mer'
+        ],
         order: 2,
         color: 'fish'
     },
     'Fruits & Légumes': {
-        keywords: ['produce', 'vegetable', 'fruit', 'fresh', 'lettuce', 'tomato', 'onion', 'garlic', 'potato', 'carrot', 'apple', 'banana', 'lemon', 'orange', 'herbs', 'salad'],
+        keywords: [
+            'produce', 'vegetable', 'fruit', 'fresh', 'lettuce', 'tomato', 'onion', 'garlic', 'potato', 'carrot', 'apple', 'banana', 'lemon', 'orange', 'herbs', 'salad',
+            'légume', 'fruit', 'frais', 'laitue', 'tomate', 'oignon', 'ail', 'pomme de terre', 'carotte', 'pomme', 'banane', 'citron', 'orange', 'herbe', 'salade',
+            'courgette', 'aubergine', 'poivron', 'champignon', 'épinard', 'brocoli', 'chou', 'haricot vert', 'persil', 'basilic', 'thym', 'ciboulette', 'échalote', 'poireau', 'céleri', 'fenouil', 'asperge', 'concombre', 'avocat', 'fraise', 'framboise', 'cerise', 'pêche', 'poire', 'raisin', 'melon', 'pastèque', 'ananas', 'mangue', 'kiwi'
+        ],
         order: 3,
         color: 'vegetable'
     },
     'Crémerie': {
-        keywords: ['dairy', 'milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg'],
+        keywords: [
+            'dairy', 'milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg',
+            'lait', 'fromage', 'yaourt', 'beurre', 'crème', 'oeuf', 'œuf', 'jaune', 'crème fraîche', 'mascarpone', 'ricotta', 'mozzarella', 'parmesan', 'gruyère', 'emmental', 'comté', 'chèvre', 'roquefort', 'camembert', 'brie'
+        ],
         order: 4,
         color: 'dairy'
     },
     'Boulangerie': {
-        keywords: ['bakery', 'bread', 'baguette', 'croissant'],
+        keywords: [
+            'bakery', 'bread', 'baguette', 'croissant',
+            'pain', 'brioche', 'farine', 'levure'
+        ],
         order: 5,
         color: 'other'
     },
     'Épicerie': {
-        keywords: ['pasta', 'rice', 'grain', 'cereal', 'flour', 'sugar', 'canned', 'dried', 'beans', 'lentils', 'oil', 'vinegar', 'sauce', 'condiment', 'spice', 'seasoning', 'baking'],
+        keywords: [
+            'pasta', 'rice', 'grain', 'cereal', 'flour', 'sugar', 'canned', 'dried', 'beans', 'lentils', 'oil', 'vinegar', 'sauce', 'condiment', 'spice', 'seasoning', 'baking',
+            'pâtes', 'riz', 'céréale', 'sucre', 'conserve', 'haricot', 'lentille', 'huile', 'vinaigre', 'épice', 'sel', 'poivre', 'moutarde', 'mayonnaise', 'ketchup', 'bouillon', 'cube', 'concentré', 'coulis', 'miel', 'confiture', 'nutella', 'pois chiche', 'semoule', 'quinoa', 'boulgour'
+        ],
         order: 6,
         color: 'other'
     },
     'Surgelés': {
-        keywords: ['frozen', 'ice'],
+        keywords: [
+            'frozen', 'ice', 'surgelé', 'congelé', 'glace'
+        ],
         order: 7,
         color: 'other'
     },
     'Boissons': {
-        keywords: ['beverage', 'drink', 'juice', 'water', 'soda', 'wine', 'beer'],
+        keywords: [
+            'beverage', 'drink', 'juice', 'water', 'soda', 'wine', 'beer',
+            'boisson', 'jus', 'eau', 'vin', 'bière', 'cidre', 'limonade', 'sirop'
+        ],
         order: 8,
         color: 'other'
     },
