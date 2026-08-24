@@ -8,6 +8,8 @@ const MarmitonScraper = {
     CORS_PROXIES: [
         'https://api.allorigins.win/raw?url=',
         'https://corsproxy.io/?',
+        'https://api.codetabs.com/v1/proxy?quest=',
+        'https://thingproxy.freeboard.io/fetch/',
     ],
 
     /**
@@ -37,7 +39,7 @@ const MarmitonScraper = {
         }
 
         if (!html) {
-            throw new Error('Impossible de récupérer la recette. Vérifiez votre connexion.');
+            throw new Error('Impossible de récupérer la recette. Marmiton bloque peut-être les requêtes. Essayez l\'import PDF.');
         }
 
         return this.parseHTML(html, url);
