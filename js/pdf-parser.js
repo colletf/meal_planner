@@ -38,7 +38,7 @@ const MarmitonParser = {
      */
     async renderPageAsImage(page) {
         try {
-            const scale = 1.5;
+            const scale = 1.0; // Réduire pour économiser de l'espace
             const viewport = page.getViewport({ scale });
 
             const canvas = document.createElement('canvas');
@@ -52,8 +52,7 @@ const MarmitonParser = {
             }).promise;
 
             // Extraire seulement la partie supérieure (image du plat)
-            // Les PDFs Marmiton ont généralement l'image en haut
-            const cropHeight = Math.min(viewport.height * 0.5, 400);
+            const cropHeight = Math.min(viewport.height * 0.4, 300);
             const cropCanvas = document.createElement('canvas');
             cropCanvas.width = viewport.width;
             cropCanvas.height = cropHeight;
@@ -61,9 +60,11 @@ const MarmitonParser = {
 
             cropCtx.drawImage(canvas, 0, 0, viewport.width, cropHeight, 0, 0, viewport.width, cropHeight);
 
-            return cropCanvas.toDataURL('image/jpeg', 0.85);
+            const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.7);
+            console.log('Image extraite du PDF, taille:', Math.round(dataUrl.length / 1024), 'KB');
+            return dataUrl;
         } catch (e) {
-            console.log('Page render failed:', e.message);
+            console.error('Erreur extraction image PDF:', e);
         }
         return null;
     },

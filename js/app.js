@@ -14,11 +14,72 @@ class MealPlannerApp {
         this.setupPlanTab();
         this.setupGroceriesTab();
 
+        // Nettoyer les titres dupliqués dans les données existantes
+        this.cleanupDuplicateTitles();
+
         // Charger les favoris par défaut (au lieu de Spoonacular)
         this.loadFavorites();
 
         // Vérifier si une URL a été partagée (Android Share)
         this.checkSharedURL();
+    }
+
+    cleanupDuplicateTitles() {
+        const removeDuplicate = (title) => {
+            if (!title) return title;
+            const words = title.split(' ');
+            const len = words.length;
+            if (len >= 4 && len % 2 === 0) {
+                const half = len / 2;
+                const firstHalf = words.slice(0, half).join(' ');
+                const secondHalf = words.slice(half).join(' ');
+                if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                    return firstHalf;
+                }
+            }
+            for (let i = 2; i <= Math.floor(len / 2); i++) {
+                const firstPart = words.slice(0, i).join(' ');
+                const secondPart = words.slice(i, i * 2).join(' ');
+                if (firstPart.toLowerCase() === secondPart.toLowerCase()) {
+                    return firstPart;
+                }
+            }
+            return title;
+        };
+
+        // Nettoyer les favoris
+        let favorites = Storage.getFavorites();
+        let favChanged = false;
+        favorites.forEach(f => {
+            const clean = removeDuplicate(f.title);
+            if (clean !== f.title) { f.title = clean; favChanged = true; }
+        });
+        if (favChanged) Storage.saveFavorites(favorites);
+
+        // Nettoyer les recettes custom
+        let customs = Storage.getCustomRecipes();
+        let custChanged = false;
+        customs.forEach(c => {
+            const clean = removeDuplicate(c.title);
+            if (clean !== c.title) { c.title = clean; custChanged = true; }
+        });
+        if (custChanged) Storage.saveCustomRecipes(customs);
+
+        // Nettoyer le planning
+        let plan = Storage.getWeeklyPlan();
+        let planChanged = false;
+        for (const day of Object.keys(plan)) {
+            for (const type of ['lunch', 'dinner']) {
+                if (plan[day]?.[type]?.meal?.title) {
+                    const clean = removeDuplicate(plan[day][type].meal.title);
+                    if (clean !== plan[day][type].meal.title) {
+                        plan[day][type].meal.title = clean;
+                        planChanged = true;
+                    }
+                }
+            }
+        }
+        if (planChanged) Storage.saveWeeklyPlan(plan);
     }
 
     loadFavorites() {
