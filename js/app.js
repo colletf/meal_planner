@@ -1,4 +1,4 @@
-console.log('=== Meal Planner v7 chargé ===');
+console.log('=== Meal Planner v8 chargé ===');
 
 class MealPlannerApp {
     constructor() {

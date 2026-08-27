@@ -22,7 +22,7 @@ const MarmitonParser = {
 
             // Extraire l'image de la première page
             if (i === 1 && !imageDataUrl) {
-                imageDataUrl = await this.extractLargestImage(page);
+                imageDataUrl = await this.extractPageImage(page);
             }
         }
 
@@ -34,100 +34,49 @@ const MarmitonParser = {
     },
 
     /**
-     * Extrait la plus grande image du PDF
+     * Rend la page PDF en image et extrait la zone du plat
      */
-    async extractLargestImage(page) {
+    async extractPageImage(page) {
         try {
-            const ops = await page.getOperatorList();
-            let largestImage = null;
-            let maxSize = 0;
+            const scale = 0.8;
+            const viewport = page.getViewport({ scale });
 
-            for (let i = 0; i < ops.fnArray.length; i++) {
-                // paintImageXObject = 85, paintJpegXObject = 82
-                if (ops.fnArray[i] === 85 || ops.fnArray[i] === 82) {
-                    const imgName = ops.argsArray[i][0];
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
 
-                    try {
-                        const img = await new Promise((resolve, reject) => {
-                            const timeout = setTimeout(() => reject('timeout'), 2000);
-                            page.objs.get(imgName, (data) => {
-                                clearTimeout(timeout);
-                                resolve(data);
-                            });
-                        });
+            // Fond blanc
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                        if (img && img.width && img.height) {
-                            const size = img.width * img.height;
-                            // Garder l'image la plus grande (probablement la photo du plat)
-                            if (size > maxSize && img.width > 150 && img.height > 150) {
-                                maxSize = size;
-                                largestImage = img;
-                            }
-                        }
-                    } catch (e) {
-                        // Image non disponible, continuer
-                    }
-                }
-            }
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
 
-            if (largestImage) {
-                return this.imageDataToDataUrl(largestImage);
-            }
+            // Prendre une zone carrée au centre-haut (là où est généralement l'image)
+            const size = Math.min(viewport.width * 0.6, 250);
+            const startX = (viewport.width - size) / 2;
+            const startY = viewport.height * 0.12; // Sauter le header
+
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = size;
+            cropCanvas.height = size;
+            const cropCtx = cropCanvas.getContext('2d');
+
+            cropCtx.drawImage(
+                canvas,
+                startX, startY, size, size,
+                0, 0, size, size
+            );
+
+            const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.75);
+            console.log('Image PDF extraite, taille:', Math.round(dataUrl.length / 1024), 'KB');
+            return dataUrl;
         } catch (e) {
-            console.log('Extraction image échouée:', e.message);
+            console.error('Erreur extraction image:', e);
         }
-        return null;
-    },
-
-    /**
-     * Convertit les données d'image PDF en Data URL
-     */
-    imageDataToDataUrl(img) {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-
-        // Créer ImageData
-        const imageData = ctx.createImageData(img.width, img.height);
-
-        if (img.data) {
-            const data = img.data;
-            const len = img.width * img.height;
-
-            if (data.length === len * 4) {
-                // RGBA
-                imageData.data.set(data);
-            } else if (data.length === len * 3) {
-                // RGB -> RGBA
-                for (let i = 0, j = 0; i < len; i++, j += 3) {
-                    imageData.data[i * 4] = data[j];
-                    imageData.data[i * 4 + 1] = data[j + 1];
-                    imageData.data[i * 4 + 2] = data[j + 2];
-                    imageData.data[i * 4 + 3] = 255;
-                }
-            } else if (data.length === len) {
-                // Grayscale -> RGBA
-                for (let i = 0; i < len; i++) {
-                    imageData.data[i * 4] = data[i];
-                    imageData.data[i * 4 + 1] = data[i];
-                    imageData.data[i * 4 + 2] = data[i];
-                    imageData.data[i * 4 + 3] = 255;
-                }
-            } else {
-                return null;
-            }
-
-            ctx.putImageData(imageData, 0, 0);
-            return canvas.toDataURL('image/jpeg', 0.8);
-        }
-
-        // Si c'est déjà un bitmap ou canvas
-        if (img.bitmap) {
-            ctx.drawImage(img.bitmap, 0, 0);
-            return canvas.toDataURL('image/jpeg', 0.8);
-        }
-
         return null;
     },
 
@@ -340,24 +289,34 @@ const MarmitonParser = {
      * Supprime les titres dupliqués (ex: "Blanquette de veau Blanquette de veau" -> "Blanquette de veau")
      */
     removeDuplicateTitle(title) {
-        const words = title.split(' ');
+        if (!title) return title;
+
+        // Méthode 1: Regex pour "X X" avec espaces multiples
+        const match = title.match(/^(.+?)\s{1,3}\1$/i);
+        if (match) {
+            console.log('PDF Parser - Titre dupliqué corrigé:', title, '->', match[1]);
+            return match[1].trim();
+        }
+
+        // Méthode 2: Par mots
+        const words = title.split(/\s+/);
         const len = words.length;
 
-        // Vérifier si la deuxième moitié est identique à la première
         if (len >= 4 && len % 2 === 0) {
             const half = len / 2;
             const firstHalf = words.slice(0, half).join(' ');
             const secondHalf = words.slice(half).join(' ');
             if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                console.log('PDF Parser - Titre dupliqué corrigé (mots):', title, '->', firstHalf);
                 return firstHalf;
             }
         }
 
-        // Vérifier pour des répétitions partielles
         for (let i = 2; i <= Math.floor(len / 2); i++) {
             const firstPart = words.slice(0, i).join(' ');
             const secondPart = words.slice(i, i * 2).join(' ');
             if (firstPart.toLowerCase() === secondPart.toLowerCase()) {
+                console.log('PDF Parser - Titre dupliqué corrigé (partiel):', title, '->', firstPart);
                 return firstPart;
             }
         }
