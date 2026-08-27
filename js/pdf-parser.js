@@ -34,11 +34,12 @@ const MarmitonParser = {
     },
 
     /**
-     * Rend la première page du PDF en image (capture d'écran de la page)
+     * Rend une portion de la première page du PDF en image
+     * Sur les PDFs Marmiton, l'image du plat est généralement au milieu/bas de la première partie
      */
     async renderPageAsImage(page) {
         try {
-            const scale = 1.0; // Réduire pour économiser de l'espace
+            const scale = 1.0;
             const viewport = page.getViewport({ scale });
 
             const canvas = document.createElement('canvas');
@@ -51,17 +52,24 @@ const MarmitonParser = {
                 viewport: viewport
             }).promise;
 
-            // Extraire seulement la partie supérieure (image du plat)
-            const cropHeight = Math.min(viewport.height * 0.4, 300);
+            // Sauter le header (environ 15% du haut) et prendre une zone au milieu
+            const skipTop = Math.floor(viewport.height * 0.15);
+            const cropHeight = Math.min(viewport.height * 0.35, 280);
+
             const cropCanvas = document.createElement('canvas');
             cropCanvas.width = viewport.width;
             cropCanvas.height = cropHeight;
             const cropCtx = cropCanvas.getContext('2d');
 
-            cropCtx.drawImage(canvas, 0, 0, viewport.width, cropHeight, 0, 0, viewport.width, cropHeight);
+            // Copier depuis (0, skipTop) vers (0, 0)
+            cropCtx.drawImage(
+                canvas,
+                0, skipTop, viewport.width, cropHeight,  // source
+                0, 0, viewport.width, cropHeight         // destination
+            );
 
             const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.7);
-            console.log('Image extraite du PDF, taille:', Math.round(dataUrl.length / 1024), 'KB');
+            console.log('Image PDF extraite, taille:', Math.round(dataUrl.length / 1024), 'KB');
             return dataUrl;
         } catch (e) {
             console.error('Erreur extraction image PDF:', e);
@@ -87,14 +95,26 @@ const MarmitonParser = {
             source: 'marmiton'
         };
 
-        // 1. Extraire le titre - chercher après le dernier ">"
+        // 1. Extraire le titre - plusieurs stratégies
+        let title = '';
+
+        // Stratégie 1: chercher après ">" (breadcrumb)
         const titleMatch = text.match(/>\s*([A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s'''-]{5,60}?)(?:\s+i\s+|\s+\d+\/\d+)/);
         if (titleMatch) {
-            let title = titleMatch[1].trim();
-            // Nettoyer les titres dupliqués (ex: "Blanquette de veau Blanquette de veau")
-            title = this.removeDuplicateTitle(title);
-            recipe.title = title;
+            title = titleMatch[1].trim();
         }
+
+        // Stratégie 2: chercher avant "personnes" ou le temps
+        if (!title) {
+            const altMatch = text.match(/([A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s'''-]{5,50}?)\s+\d+\s*personnes/i);
+            if (altMatch) {
+                title = altMatch[1].trim();
+            }
+        }
+
+        // Nettoyer les titres dupliqués
+        title = this.removeDuplicateTitle(title);
+        recipe.title = title;
 
         // 2. Extraire le nombre de personnes
         const servingsMatch = text.match(/(\d+)\s*personnes?\s*\+/i);
