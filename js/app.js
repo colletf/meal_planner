@@ -1,3 +1,5 @@
+console.log('=== Meal Planner v7 chargé ===');
+
 class MealPlannerApp {
     constructor() {
         this.currentMeals = [];
