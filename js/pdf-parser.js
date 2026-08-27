@@ -20,9 +20,9 @@ const MarmitonParser = {
             const pageText = textContent.items.map(item => item.str).join(' ');
             fullText += pageText + ' ';
 
-            // Rendre la première page en image
+            // Extraire l'image de la première page
             if (i === 1 && !imageDataUrl) {
-                imageDataUrl = await this.renderPageAsImage(page);
+                imageDataUrl = await this.extractLargestImage(page);
             }
         }
 
@@ -34,46 +34,100 @@ const MarmitonParser = {
     },
 
     /**
-     * Rend une portion de la première page du PDF en image
-     * Sur les PDFs Marmiton, l'image du plat est généralement au milieu/bas de la première partie
+     * Extrait la plus grande image du PDF
      */
-    async renderPageAsImage(page) {
+    async extractLargestImage(page) {
         try {
-            const scale = 1.0;
-            const viewport = page.getViewport({ scale });
+            const ops = await page.getOperatorList();
+            let largestImage = null;
+            let maxSize = 0;
 
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const ctx = canvas.getContext('2d');
+            for (let i = 0; i < ops.fnArray.length; i++) {
+                // paintImageXObject = 85, paintJpegXObject = 82
+                if (ops.fnArray[i] === 85 || ops.fnArray[i] === 82) {
+                    const imgName = ops.argsArray[i][0];
 
-            await page.render({
-                canvasContext: ctx,
-                viewport: viewport
-            }).promise;
+                    try {
+                        const img = await new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => reject('timeout'), 2000);
+                            page.objs.get(imgName, (data) => {
+                                clearTimeout(timeout);
+                                resolve(data);
+                            });
+                        });
 
-            // Sauter le header (environ 15% du haut) et prendre une zone au milieu
-            const skipTop = Math.floor(viewport.height * 0.15);
-            const cropHeight = Math.min(viewport.height * 0.35, 280);
+                        if (img && img.width && img.height) {
+                            const size = img.width * img.height;
+                            // Garder l'image la plus grande (probablement la photo du plat)
+                            if (size > maxSize && img.width > 150 && img.height > 150) {
+                                maxSize = size;
+                                largestImage = img;
+                            }
+                        }
+                    } catch (e) {
+                        // Image non disponible, continuer
+                    }
+                }
+            }
 
-            const cropCanvas = document.createElement('canvas');
-            cropCanvas.width = viewport.width;
-            cropCanvas.height = cropHeight;
-            const cropCtx = cropCanvas.getContext('2d');
-
-            // Copier depuis (0, skipTop) vers (0, 0)
-            cropCtx.drawImage(
-                canvas,
-                0, skipTop, viewport.width, cropHeight,  // source
-                0, 0, viewport.width, cropHeight         // destination
-            );
-
-            const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.7);
-            console.log('Image PDF extraite, taille:', Math.round(dataUrl.length / 1024), 'KB');
-            return dataUrl;
+            if (largestImage) {
+                return this.imageDataToDataUrl(largestImage);
+            }
         } catch (e) {
-            console.error('Erreur extraction image PDF:', e);
+            console.log('Extraction image échouée:', e.message);
         }
+        return null;
+    },
+
+    /**
+     * Convertit les données d'image PDF en Data URL
+     */
+    imageDataToDataUrl(img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+
+        // Créer ImageData
+        const imageData = ctx.createImageData(img.width, img.height);
+
+        if (img.data) {
+            const data = img.data;
+            const len = img.width * img.height;
+
+            if (data.length === len * 4) {
+                // RGBA
+                imageData.data.set(data);
+            } else if (data.length === len * 3) {
+                // RGB -> RGBA
+                for (let i = 0, j = 0; i < len; i++, j += 3) {
+                    imageData.data[i * 4] = data[j];
+                    imageData.data[i * 4 + 1] = data[j + 1];
+                    imageData.data[i * 4 + 2] = data[j + 2];
+                    imageData.data[i * 4 + 3] = 255;
+                }
+            } else if (data.length === len) {
+                // Grayscale -> RGBA
+                for (let i = 0; i < len; i++) {
+                    imageData.data[i * 4] = data[i];
+                    imageData.data[i * 4 + 1] = data[i];
+                    imageData.data[i * 4 + 2] = data[i];
+                    imageData.data[i * 4 + 3] = 255;
+                }
+            } else {
+                return null;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        // Si c'est déjà un bitmap ou canvas
+        if (img.bitmap) {
+            ctx.drawImage(img.bitmap, 0, 0);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
         return null;
     },
 

@@ -27,6 +27,15 @@ class MealPlannerApp {
     cleanupDuplicateTitles() {
         const removeDuplicate = (title) => {
             if (!title) return title;
+
+            // Méthode 1: Regex pour détecter "X X" où X est identique
+            const match = title.match(/^(.+?)\s+\1$/i);
+            if (match) {
+                console.log('Titre dupliqué corrigé:', title, '->', match[1]);
+                return match[1];
+            }
+
+            // Méthode 2: Comparaison par mots
             const words = title.split(' ');
             const len = words.length;
             if (len >= 4 && len % 2 === 0) {
@@ -34,14 +43,8 @@ class MealPlannerApp {
                 const firstHalf = words.slice(0, half).join(' ');
                 const secondHalf = words.slice(half).join(' ');
                 if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                    console.log('Titre dupliqué corrigé (mots):', title, '->', firstHalf);
                     return firstHalf;
-                }
-            }
-            for (let i = 2; i <= Math.floor(len / 2); i++) {
-                const firstPart = words.slice(0, i).join(' ');
-                const secondPart = words.slice(i, i * 2).join(' ');
-                if (firstPart.toLowerCase() === secondPart.toLowerCase()) {
-                    return firstPart;
                 }
             }
             return title;
