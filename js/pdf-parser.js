@@ -20,9 +20,9 @@ const MarmitonParser = {
             const pageText = textContent.items.map(item => item.str).join(' ');
             fullText += pageText + ' ';
 
-            // Extraire l'image de la première page
+            // Rendre la première page en image
             if (i === 1 && !imageDataUrl) {
-                imageDataUrl = await this.extractImageFromPage(page);
+                imageDataUrl = await this.renderPageAsImage(page);
             }
         }
 
@@ -34,58 +34,36 @@ const MarmitonParser = {
     },
 
     /**
-     * Extrait la première image d'une page PDF
+     * Rend la première page du PDF en image (capture d'écran de la page)
      */
-    async extractImageFromPage(page) {
+    async renderPageAsImage(page) {
         try {
-            const operatorList = await page.getOperatorList();
-            const objs = page.objs;
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
 
-            for (let i = 0; i < operatorList.fnArray.length; i++) {
-                // OPS.paintImageXObject = 85
-                if (operatorList.fnArray[i] === 85) {
-                    const imageName = operatorList.argsArray[i][0];
-                    const imgData = await new Promise((resolve) => {
-                        objs.get(imageName, resolve);
-                    });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
 
-                    if (imgData && imgData.data) {
-                        // Créer un canvas pour convertir l'image
-                        const canvas = document.createElement('canvas');
-                        canvas.width = imgData.width;
-                        canvas.height = imgData.height;
-                        const ctx = canvas.getContext('2d');
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
 
-                        // Créer ImageData
-                        const imageData = ctx.createImageData(imgData.width, imgData.height);
+            // Extraire seulement la partie supérieure (image du plat)
+            // Les PDFs Marmiton ont généralement l'image en haut
+            const cropHeight = Math.min(viewport.height * 0.5, 400);
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = viewport.width;
+            cropCanvas.height = cropHeight;
+            const cropCtx = cropCanvas.getContext('2d');
 
-                        // Copier les données de l'image
-                        if (imgData.data.length === imgData.width * imgData.height * 4) {
-                            // RGBA
-                            imageData.data.set(imgData.data);
-                        } else if (imgData.data.length === imgData.width * imgData.height * 3) {
-                            // RGB -> RGBA
-                            for (let j = 0, k = 0; j < imgData.data.length; j += 3, k += 4) {
-                                imageData.data[k] = imgData.data[j];
-                                imageData.data[k + 1] = imgData.data[j + 1];
-                                imageData.data[k + 2] = imgData.data[j + 2];
-                                imageData.data[k + 3] = 255;
-                            }
-                        } else {
-                            continue;
-                        }
+            cropCtx.drawImage(canvas, 0, 0, viewport.width, cropHeight, 0, 0, viewport.width, cropHeight);
 
-                        ctx.putImageData(imageData, 0, 0);
-
-                        // Ignorer les images trop petites (icônes, logos)
-                        if (imgData.width > 100 && imgData.height > 100) {
-                            return canvas.toDataURL('image/jpeg', 0.8);
-                        }
-                    }
-                }
-            }
+            return cropCanvas.toDataURL('image/jpeg', 0.85);
         } catch (e) {
-            console.log('Image extraction failed:', e.message);
+            console.log('Page render failed:', e.message);
         }
         return null;
     },
@@ -111,7 +89,10 @@ const MarmitonParser = {
         // 1. Extraire le titre - chercher après le dernier ">"
         const titleMatch = text.match(/>\s*([A-ZÀ-Ÿ][A-Za-zÀ-ÿ\s'''-]{5,60}?)(?:\s+i\s+|\s+\d+\/\d+)/);
         if (titleMatch) {
-            recipe.title = titleMatch[1].trim();
+            let title = titleMatch[1].trim();
+            // Nettoyer les titres dupliqués (ex: "Blanquette de veau Blanquette de veau")
+            title = this.removeDuplicateTitle(title);
+            recipe.title = title;
         }
 
         // 2. Extraire le nombre de personnes
@@ -278,5 +259,34 @@ const MarmitonParser = {
         const instructions = steps.map(s => `**Étape ${s.num}**\n${s.content}`).join('\n\n');
 
         return instructions || 'Instructions non disponibles.';
+    },
+
+    /**
+     * Supprime les titres dupliqués (ex: "Blanquette de veau Blanquette de veau" -> "Blanquette de veau")
+     */
+    removeDuplicateTitle(title) {
+        const words = title.split(' ');
+        const len = words.length;
+
+        // Vérifier si la deuxième moitié est identique à la première
+        if (len >= 4 && len % 2 === 0) {
+            const half = len / 2;
+            const firstHalf = words.slice(0, half).join(' ');
+            const secondHalf = words.slice(half).join(' ');
+            if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                return firstHalf;
+            }
+        }
+
+        // Vérifier pour des répétitions partielles
+        for (let i = 2; i <= Math.floor(len / 2); i++) {
+            const firstPart = words.slice(0, i).join(' ');
+            const secondPart = words.slice(i, i * 2).join(' ');
+            if (firstPart.toLowerCase() === secondPart.toLowerCase()) {
+                return firstPart;
+            }
+        }
+
+        return title;
     }
 };
