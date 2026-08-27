@@ -12,14 +12,82 @@ const MarmitonParser = {
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         let fullText = '';
+        let imageDataUrl = null;
+
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const pageText = textContent.items.map(item => item.str).join(' ');
             fullText += pageText + ' ';
+
+            // Extraire l'image de la première page
+            if (i === 1 && !imageDataUrl) {
+                imageDataUrl = await this.extractImageFromPage(page);
+            }
         }
 
-        return this.parseMarmitonText(fullText);
+        const recipe = this.parseMarmitonText(fullText);
+        if (imageDataUrl) {
+            recipe.image = imageDataUrl;
+        }
+        return recipe;
+    },
+
+    /**
+     * Extrait la première image d'une page PDF
+     */
+    async extractImageFromPage(page) {
+        try {
+            const operatorList = await page.getOperatorList();
+            const objs = page.objs;
+
+            for (let i = 0; i < operatorList.fnArray.length; i++) {
+                // OPS.paintImageXObject = 85
+                if (operatorList.fnArray[i] === 85) {
+                    const imageName = operatorList.argsArray[i][0];
+                    const imgData = await new Promise((resolve) => {
+                        objs.get(imageName, resolve);
+                    });
+
+                    if (imgData && imgData.data) {
+                        // Créer un canvas pour convertir l'image
+                        const canvas = document.createElement('canvas');
+                        canvas.width = imgData.width;
+                        canvas.height = imgData.height;
+                        const ctx = canvas.getContext('2d');
+
+                        // Créer ImageData
+                        const imageData = ctx.createImageData(imgData.width, imgData.height);
+
+                        // Copier les données de l'image
+                        if (imgData.data.length === imgData.width * imgData.height * 4) {
+                            // RGBA
+                            imageData.data.set(imgData.data);
+                        } else if (imgData.data.length === imgData.width * imgData.height * 3) {
+                            // RGB -> RGBA
+                            for (let j = 0, k = 0; j < imgData.data.length; j += 3, k += 4) {
+                                imageData.data[k] = imgData.data[j];
+                                imageData.data[k + 1] = imgData.data[j + 1];
+                                imageData.data[k + 2] = imgData.data[j + 2];
+                                imageData.data[k + 3] = 255;
+                            }
+                        } else {
+                            continue;
+                        }
+
+                        ctx.putImageData(imageData, 0, 0);
+
+                        // Ignorer les images trop petites (icônes, logos)
+                        if (imgData.width > 100 && imgData.height > 100) {
+                            return canvas.toDataURL('image/jpeg', 0.8);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Image extraction failed:', e.message);
+        }
+        return null;
     },
 
     /**

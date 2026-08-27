@@ -1047,6 +1047,7 @@ class MealPlannerApp {
     renderGroceryList(sortBy = 'aisle') {
         const plan = Storage.getWeeklyPlan();
         const ingredientsMap = new Map();
+        const ingredientsByRecipe = new Map(); // Pour le tri par recette
 
         // Ingrédients à exclure de la liste de courses (mots exacts uniquement)
         const EXCLUDED_INGREDIENTS = [
@@ -1058,9 +1059,7 @@ class MealPlannerApp {
         // Fonction pour vérifier si c'est un ingrédient exclu (mot exact, pas substring)
         const isExcludedIngredient = (name) => {
             const lower = name.toLowerCase().trim();
-            // "eau" seul est exclu, mais pas "veau" ou "eau de vie"
             if (lower === 'eau') return true;
-            // Vérifier les autres exclusions
             return EXCLUDED_INGREDIENTS.some(excl => lower === excl);
         };
 
@@ -1103,40 +1102,119 @@ class MealPlannerApp {
                 if (!planned || !planned.meal) continue;
 
                 const servingsRatio = planned.servings / (planned.meal.servings || 4);
+                const recipeKey = `${day}_${mealType}`;
+                const recipeTitle = planned.meal.title;
+
+                if (!ingredientsByRecipe.has(recipeKey)) {
+                    ingredientsByRecipe.set(recipeKey, {
+                        title: recipeTitle,
+                        day: day,
+                        mealType: mealType,
+                        ingredients: []
+                    });
+                }
 
                 for (const ing of planned.meal.ingredients) {
-                    const keyLower = ing.name.toLowerCase().trim();
-
                     if (isExcludedIngredient(ing.name)) {
                         continue;
                     }
 
                     const key = normalizeIngredientKey(ing.name);
+                    const converted = convertToMetric((ing.amount || 1) * servingsRatio, ing.unit, ing.name);
 
+                    // Pour tri par recette : garder les ingrédients par recette
+                    ingredientsByRecipe.get(recipeKey).ingredients.push({
+                        id: `${recipeKey}_${key}`,
+                        name: ing.name,
+                        nameFr: translateIngredient(ing.name),
+                        displayAmount: converted.amount,
+                        displayUnit: converted.unit,
+                        category: getGroceryCategory(ing.aisle, ing.name)
+                    });
+
+                    // Pour tri agrégé
                     if (ingredientsMap.has(key)) {
                         const existing = ingredientsMap.get(key);
                         const existingConverted = convertToMetric(existing.amount, existing.unit, existing.name);
-                        const newConverted = convertToMetric((ing.amount || 1) * servingsRatio, ing.unit, ing.name);
 
-                        if (existingConverted.unit === newConverted.unit) {
-                            existing.amount = existingConverted.amount + newConverted.amount;
+                        if (existingConverted.unit === converted.unit) {
+                            existing.amount = existingConverted.amount + converted.amount;
                             existing.unit = existingConverted.unit;
                         } else {
                             existing.amount += (ing.amount || 1) * servingsRatio;
                         }
+                        existing.recipes.add(recipeTitle);
                     } else {
                         ingredientsMap.set(key, {
                             id: key,
                             name: ing.name,
                             amount: (ing.amount || 1) * servingsRatio,
                             unit: ing.unit,
-                            aisle: ing.aisle || 'Other'
+                            aisle: ing.aisle || 'Other',
+                            recipes: new Set([recipeTitle])
                         });
                     }
                 }
             }
         }
 
+        const container = document.getElementById('grocery-list');
+
+        // Affichage par recette
+        if (sortBy === 'recipe') {
+            if (ingredientsByRecipe.size === 0) {
+                container.innerHTML = `
+                    <div class="grocery-empty">
+                        <i class="fas fa-shopping-basket"></i>
+                        <div>Aucun repas planifié</div>
+                        <div style="font-size: 14px; margin-top: 8px;">
+                            Ajoutez des repas au planning pour générer la liste de courses
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            let index = 0;
+            const allIngredients = [];
+
+            for (const [recipeKey, recipeData] of ingredientsByRecipe) {
+                html += `<div class="grocery-category-header"><i class="fas fa-utensils"></i> ${recipeData.title}</div>`;
+
+                for (const ing of recipeData.ingredients) {
+                    const displayAmount = ing.displayAmount > 0
+                        ? (ing.displayAmount < 10 ? ing.displayAmount.toFixed(1) : Math.round(ing.displayAmount))
+                        : '';
+
+                    const isOwned = this.ownedIngredients.has(ing.id);
+                    allIngredients.push(ing);
+
+                    html += `
+                        <div class="grocery-item ${isOwned ? 'owned' : ''}" data-id="${ing.id}" data-index="${index}">
+                            <button class="grocery-own-btn ${isOwned ? 'active' : ''}" onclick="app.toggleOwned('${ing.id}')" title="J'ai déjà">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <div class="grocery-item-main">
+                                <div class="grocery-item-name">${ing.nameFr}</div>
+                                <div class="grocery-item-quantity">${displayAmount} ${ing.displayUnit}</div>
+                            </div>
+                            <button class="grocery-edit-btn" onclick="app.showQuantityModal(${index})" title="Modifier quantité">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                    `;
+                    index++;
+                }
+            }
+
+            container.innerHTML = html;
+            this.currentGroceryIngredients = allIngredients;
+            this.currentSortBy = sortBy;
+            return;
+        }
+
+        // Affichage agrégé (par rayon ou nom)
         let ingredients = Array.from(ingredientsMap.values()).map(ing => {
             const converted = convertToMetric(ing.amount, ing.unit, ing.name);
             const category = getGroceryCategory(ing.aisle, ing.name);
@@ -1164,8 +1242,6 @@ class MealPlannerApp {
         } else {
             ingredients.sort((a, b) => a.nameFr.localeCompare(b.nameFr));
         }
-
-        const container = document.getElementById('grocery-list');
 
         if (ingredients.length === 0) {
             container.innerHTML = `
